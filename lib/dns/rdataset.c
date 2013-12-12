@@ -328,6 +328,10 @@ towiresorted(dns_rdataset_t *rdataset, const dns_name_t *owner_name,
 	dns_rdata_t *shuffled = NULL, shuffled_fixed[MAX_SHUFFLE];
 	struct towire_sort *sorted = NULL, sorted_fixed[MAX_SHUFFLE];
 
+	/* count processed auswer ips */
+	int answer_count = 0;
+	int is_answer    = 0;
+
 	UNUSED(state);
 
 	/*
@@ -470,6 +474,32 @@ towiresorted(dns_rdataset_t *rdataset, const dns_name_t *owner_name,
 		/*
 		 * Copy out the name, type, class, ttl.
 		 */
+			/* mark if is answer data. */
+			is_answer = 0;
+			/* Answer from a non-authoritative server,we set the ttl fixed as 500. */
+			if(rdataset->attributes == DNS_RDATASETATTR_LOADORDER && 
+							rdataset->type == dns_rdatatype_a &&
+							rdataset->trust == dns_trust_answer){
+					is_answer = 1;
+					if(answer_count == 0){
+							answer_count ++;
+					}else{
+							if( DNS_ANSWER_ONLY_ONE_IP ){
+									//fprintf(stderr,"DNS_ANSWER_ONLY_ONE_IP set,skip. \n");
+									if (shuffle) {
+											count--;
+											if (i == count)
+													result = ISC_R_NOMORE;
+											else
+													result = ISC_R_SUCCESS;
+									} else {
+											result = dns_rdataset_next(rdataset);
+									}
+									continue;
+							}
+					}
+			}
+
 
 		rrbuffer = *target;
 		dns_compress_setmethods(cctx, DNS_COMPRESS_GLOBAL14);
@@ -485,10 +515,17 @@ towiresorted(dns_rdataset_t *rdataset, const dns_name_t *owner_name,
 			result = ISC_R_NOSPACE;
 			goto rollback;
 		}
+
 		isc_buffer_putuint16(target, rdataset->type);
 		isc_buffer_putuint16(target, rdataset->rdclass);
 		if (!question) {
-			isc_buffer_putuint32(target, rdataset->ttl);
+			
+			if( is_answer ){
+					isc_buffer_putuint32(target, DNS_DEFAULT_TTL_FOR_NO_AUTH_NAME);
+			}else{
+					isc_buffer_putuint32(target, rdataset->ttl);
+			}
+			//fprintf(stderr,"xxxxxxxxx:trust : %d artr: %d ttl:%d  cover: %d type: %d count: %d class: %d\n", rdataset->trust,rdataset->attributes,rdataset->ttl, rdataset->covers,rdataset->type, rdataset->count, rdataset->rdclass);
 
 			/*
 			 * Save space for rdlen.

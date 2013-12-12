@@ -31,6 +31,12 @@
 
 #include <isc/types.h>
 
+/* when a domain name maped to multi-ip, if return only one ip in answer section? modify by zhongliangkang */
+#define DNS_ANSWER_ONLY_ONE_IP  1
+
+/* define the default TTL for answer from no-auth server */
+#define DNS_DEFAULT_TTL_FOR_NO_AUTH_NAME  500
+
 typedef struct dns_acache			dns_acache_t;
 typedef struct dns_acacheentry			dns_acacheentry_t;
 typedef struct dns_acachestats			dns_acachestats_t;

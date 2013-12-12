@@ -549,6 +549,15 @@ rdataset_totext(dns_rdataset_t *rdataset,
 		}
 
 		first = ISC_FALSE;
+
+		/* if this section is answer section,and we have processed the first ip. we return here.*/
+
+		if( DNS_ANSWER_ONLY_ONE_IP && rdataset->attributes == DNS_RDATASETATTR_LOADORDER){
+			result = ISC_R_NOMORE;
+			break;
+		}
+		
+		/**** end  ********/
 		result = dns_rdataset_next(rdataset);
 	}
 
