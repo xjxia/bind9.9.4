@@ -331,6 +331,8 @@ towiresorted(dns_rdataset_t *rdataset, const dns_name_t *owner_name,
 	/* count processed auswer ips */
 	int answer_count = 0;
 	int is_no_auth_answer    = 0;
+	/* tmp count for record */
+	int tmp_count = 0;
 
 	UNUSED(state);
 
@@ -470,6 +472,9 @@ towiresorted(dns_rdataset_t *rdataset, const dns_name_t *owner_name,
 	i = 0;
 	added = 0;
 
+	// save the count here
+	tmp_count = count;
+
 	do {
 		/*
 		 * Copy out the name, type, class, ttl.
@@ -491,8 +496,8 @@ towiresorted(dns_rdataset_t *rdataset, const dns_name_t *owner_name,
 					if( DNS_ANSWER_ONLY_ONE_IP ){
 						//fprintf(stderr,"DNS_ANSWER_ONLY_ONE_IP set,skip. \n");
 						if (shuffle) {
-							count--;
-							if (i == count)
+							tmp_count--;
+							if (i == tmp_count)
 								result = ISC_R_NOMORE;
 							else
 								result = ISC_R_SUCCESS;
@@ -559,7 +564,7 @@ towiresorted(dns_rdataset_t *rdataset, const dns_name_t *owner_name,
 
 		if (shuffle) {
 			i++;
-			if (i == count)
+			if (i == tmp_count)
 				result = ISC_R_NOMORE;
 			else
 				result = ISC_R_SUCCESS;
@@ -571,7 +576,7 @@ towiresorted(dns_rdataset_t *rdataset, const dns_name_t *owner_name,
 	if (result != ISC_R_NOMORE)
 		goto rollback;
 
-	*countp += count;
+	*countp += tmp_count;
 
 	result = ISC_R_SUCCESS;
 	goto cleanup;
